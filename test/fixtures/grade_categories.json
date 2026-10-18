@@ -1,0 +1,9 @@
+{
+  "Categories": [
+    {"Id": 21, "Name": "Sprawdzian", "Weight": 3, "CountToTheAverage": true, "Color": {"Id": 1}},
+    {"Id": "22", "Name": "Kartkówka", "Weight": "2", "CountToTheAverage": true},
+    {"Id": 23, "Name": "Aktywność", "CountToTheAverage": false},
+    {"Id": 24, "Name": "Propozycja oceny śródrocznej", "Weight": 1, "CountToTheAverage": false}
+  ],
+  "Url": "https://example.invalid/Grades/Categories/21,22,23,24"
+}

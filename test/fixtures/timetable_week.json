@@ -1,0 +1,71 @@
+{
+  "Timetable": {
+    "2026-10-12": [
+      [],
+      [
+        {
+          "Lesson": {"Id": "501"},
+          "Classroom": {"Id": "41", "Symbol": "12"},
+          "LessonNo": "1",
+          "DayNo": "1",
+          "Subject": {"Id": "11", "Name": "Matematyka", "Short": "mat"},
+          "Teacher": {"Id": "31", "FirstName": "Ewa", "LastName": "Przykładowa"},
+          "IsSubstitutionClass": false,
+          "IsCanceled": false,
+          "HourFrom": "08:00",
+          "HourTo": "08:45"
+        }
+      ],
+      [
+        {
+          "LessonNo": "2",
+          "Subject": {"Id": "13", "Name": "Język angielski"},
+          "Teacher": {"Id": "33", "FirstName": "Piotr", "LastName": "Fikcyjny"},
+          "HourFrom": "08:55",
+          "HourTo": "09:40",
+          "IsCanceled": false
+        },
+        {
+          "LessonNo": "2",
+          "Subject": {"Id": "14", "Name": "Język niemiecki"},
+          "Teacher": {"Id": "34", "FirstName": "Anna", "LastName": "Zmyślona"},
+          "HourFrom": "08:55",
+          "HourTo": "09:40",
+          "IsCanceled": false
+        }
+      ]
+    ],
+    "2026-10-13": [
+      [],
+      [
+        {
+          "LessonNo": "1",
+          "Subject": {"Id": "12", "Name": "Biologia"},
+          "Teacher": {"Id": "32", "FirstName": "Jan", "LastName": "Testowy"},
+          "HourFrom": "08:00",
+          "HourTo": "08:45",
+          "IsCanceled": true,
+          "IsSubstitutionClass": false
+        }
+      ],
+      [
+        {
+          "LessonNo": "2",
+          "Subject": {"Id": "15", "Name": "Chemia"},
+          "Teacher": {"Id": "35", "FirstName": "Maria", "LastName": "Próbna"},
+          "OrgSubject": {"Id": "16", "Name": "Fizyka"},
+          "OrgTeacher": {"Id": "36", "FirstName": "Adam", "LastName": "Wzorcowy"},
+          "SubstitutionNote": "Zmiana sali",
+          "HourFrom": "08:55",
+          "HourTo": "09:40",
+          "IsSubstitutionClass": true,
+          "IsCanceled": false
+        }
+      ],
+      [{"LessonNo": "3", "HourFrom": "09:50", "HourTo": "10:35"}]
+    ],
+    "2026-10-14": [],
+    "2026-10-18": [[], [], []]
+  },
+  "Pages": {"Prev": "https://example.invalid/Timetables?weekStart=2026-10-05", "Next": "https://example.invalid/Timetables?weekStart=2026-10-19"}
+}

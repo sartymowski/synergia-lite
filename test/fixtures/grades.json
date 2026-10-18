@@ -1,0 +1,75 @@
+{
+  "Grades": [
+    {
+      "Id": 1001,
+      "Lesson": {"Id": 501, "Url": "https://example.invalid/Lessons/501"},
+      "Subject": {"Id": 11, "Url": "https://example.invalid/Subjects/11"},
+      "Student": {"Id": 900, "Url": "https://example.invalid/Users/900"},
+      "Category": {"Id": 21, "Url": "https://example.invalid/Grades/Categories/21"},
+      "AddedBy": {"Id": 31, "Url": "https://example.invalid/Users/31"},
+      "Grade": "5",
+      "Date": "2026-09-15",
+      "AddDate": "2026-09-15 10:12:00",
+      "Semester": 1,
+      "IsConstituent": true,
+      "IsSemester": false,
+      "IsSemesterProposition": false,
+      "IsFinal": false,
+      "IsFinalProposition": false
+    },
+    {
+      "Id": "1002",
+      "Subject": {"Id": "11"},
+      "Category": {"Id": "22"},
+      "AddedBy": {"Id": "31"},
+      "Grade": "3-",
+      "Date": "2026-10-01",
+      "AddDate": "2026-10-01 08:00:00",
+      "Semester": "1",
+      "IsConstituent": "1"
+    },
+    {
+      "Id": 1003,
+      "Subject": {"Id": 11},
+      "Category": {"Id": 23},
+      "AddedBy": {"Id": 31},
+      "Grade": "np",
+      "Date": "2026-10-02",
+      "AddDate": "2026-10-02 09:00:00",
+      "Semester": 1,
+      "IsConstituent": true
+    },
+    {
+      "Id": 1004,
+      "Subject": {"Id": 12},
+      "Category": {"Id": 22},
+      "AddedBy": {"Id": 32},
+      "Grade": "4+",
+      "Date": "2026-10-05",
+      "AddDate": "2026-10-05 12:30:00",
+      "Semester": 1,
+      "IsConstituent": true,
+      "Comments": [{"Id": 7001, "Url": "https://example.invalid/Grades/Comments/7001"}]
+    },
+    {
+      "Id": 1005,
+      "Subject": {"Id": 12},
+      "Category": {"Id": 24},
+      "AddedBy": {"Id": 32},
+      "Grade": "4",
+      "Date": "2026-10-10",
+      "AddDate": "2026-10-10 12:30:00",
+      "Semester": 1,
+      "IsConstituent": false,
+      "IsSemesterProposition": true
+    },
+    {
+      "Id": 1006,
+      "Category": {"Id": 22},
+      "Grade": "6",
+      "Semester": 1
+    }
+  ],
+  "Resources": {"..": {"Url": "https://example.invalid/Root"}},
+  "Url": "https://example.invalid/Grades"
+}
