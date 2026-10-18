@@ -4,10 +4,11 @@
 
 **Status: eksperyment do weryfikacji, nie potwierdzony docelowy mechanizm autoryzacji.**
 
-**Co robimy:** WebView otwiera `synergia.librus.pl/loguj/portalRodzina?v=<czas>` —
-ten sam punkt wejścia co przeglądarka — i prowadzi przez oficjalny formularz OAuth
-na `api.librus.pl`. Gdy główna ramka trafi do `synergia.librus.pl` poza `/loguj`,
-aplikacja odczytuje ciasteczka Synergii i potwierdza sesję zapytaniem `Me`.
+**Co robimy:** WebView otwiera `portal.librus.pl/rodzina`; użytkownik wybiera „Zaloguj”,
+a formularz OAuth `api.librus.pl` działa w iframe strony `/rodzina/synergia/loguj` —
+dokładnie jak w przeglądarce (aktualizacja 2026-10-18, D11). Gdy Synergia pojawi się
+w głównej ramce albo pojawi się ciasteczko `oauth_token`, aplikacja potwierdza sesję
+zapytaniem `Me`.
 
 **Dlaczego nie emulacja formularza (Librusek / librus-api):**
 - formularz ma Cloudflare Turnstile — klient HTTP nie może go legalnie przejść;
@@ -66,6 +67,8 @@ Szkoły mogą mieć inne ustawienia — dlatego etykieta „orientacyjna”.
 | flutter_secure_storage | 11.2.0 | BSD-3-Clause | sesja w Keystore |
 | flutter_riverpod | 3.4.3 | MIT | stan |
 | go_router | 18.1.0 | BSD-3-Clause | nawigacja z przekierowaniami zależnymi od sesji |
+| html | 0.15.7 | MIT | bezpieczne parsowanie treści wiadomości (D12) |
+| fake_async (dev) | 1.3.3 | BSD-3-Clause | testy autozapisu |
 
 Wszystkie w najnowszych wersjach dostępnych 2026-10-18 (`flutter pub outdated`).
 `flutter_inappwebview` usunięty (D8); ciasteczka odczytuje kanał natywny (`androidx.webkit` 1.15.0, Apache-2.0).
@@ -102,3 +105,53 @@ Uwierzytelnienie potwierdza para: `Me` z sesją (200 + obiekt konta) **i** `Me` 
 ciasteczek (401/403). Raport zawiera tylko kody HTTP, liczby, nazwy pól JSON i
 nazwy/atrybuty ciasteczek; nigdy wartości, adresów z zapytaniem ani treści danych.
 Kandydat na sesję z nieudanego logowania jest trzymany wyłącznie w pamięci ekranu.
+
+## D11. Bez przechwytywania nawigacji WebView; start z portalu (2026-10-18)
+
+Formularz Synergii działa tylko w iframe portalu (`redirectToPortalIfNotInIframe`),
+a portal wpuszcza na `/rodzina/synergia/loguj` tylko z `Referer` z portalu.
+`webview_flutter_android` z `onNavigationRequest` anuluje każdą nawigację głównej ramki
+i ponawia ją `loadUrl` bez `Referer` — co dawało pętlę. Dlatego:
+- brak `onNavigationRequest`; filtr domen działa reaktywnie (`onPageStarted` i in.) —
+  obca strona może zacząć się ładować, ale jest natychmiast zamykana;
+- start z `portal.librus.pl/rodzina` (+ jedno kliknięcie użytkownika) zamiast
+  dokładania sztucznego `Referer`;
+- koniec logowania w iframe wykrywany lokalnie po ciasteczku `oauth_token`;
+  o sukcesie decyduje wyłącznie `Me`;
+- nieudana weryfikacja nie czyści WebView.
+
+## D12. Moduł Wiadomości: nowe API `wiadomosci.librus.pl`, sesja z istniejącej sesji Synergii (2026-10-18)
+
+- Źródło kontraktu: librus-synergia (MIT, potwierdzenia na żywym koncie rodzica 10.2026),
+  librus-rs (MIT); projekty AGPL tylko jako źródło faktów. Szczegóły: `docs/messages-api.md`.
+- Bez ponownego logowania: `GET synergia.librus.pl/wiadomosci3` z ciasteczkami Synergii
+  i ręcznie śledzone przekierowania (tylko `https://*.librus.pl`) — ten sam przepływ co
+  przeglądarka. Nie przez WebView: przepływ to wyłącznie przekierowania HTTP, a klient HTTP
+  pozwala kontrolować, które ciasteczka trafiają do której domeny.
+- Ciasteczka wiadomości tylko w pamięci (sesja krótka, mniej danych na dysku); klient
+  odtwarzany przy zmianie stanu logowania.
+- Rotacja ciasteczek Synergii podczas inicjalizacji jest zapisywana, a główny klient
+  porzuca swoją kopię w pamięci (`onSynergiaCookiesChanged`).
+- Wysyłanie: jedna próba, trzy wyniki (wysłano / nie wysłano / nie wiadomo), szkic do
+  potwierdzonego sukcesu, potwierdzenie przed ponowieniem po wyniku niejednoznacznym.
+- Odpowiedź w wątku przez `messages/reply` + `originalMessageId`; „Odpowiedz wszystkim”
+  niedostępne (brak identyfikatorów kont pozostałych odbiorców w API).
+- Treść bez WebView: `package:html` (MIT) → tekst ze stylami; bez JS i zasobów zewnętrznych.
+- Wiadomości robocze w `flutter_secure_storage`, przypisane do `accountId`; usuwane przy
+  wylogowaniu i przy zmianie konta.
+- Zależność dev `fake_async` (BSD-3, dart-lang) — testy autozapisu.
+
+## D13. Powiadomienia lokalne; sprawdzanie w tle domyślnie wyłączone (2026-10-18)
+
+- WorkManager (MIT) + flutter_local_notifications (BSD-3); bez FCM i serwera.
+- Okresowe sprawdzanie skrzynki ma niepotwierdzoną dopuszczalność (regulamin nie mówi o nim
+  wprost; w oficjalnej aplikacji natychmiastowe powiadomienia są płatne, a wersja darmowa
+  odświeża ok. co 3 h). Decyzja użytkownika: **wyłączone** do potwierdzenia
+  (`--dart-define=SYNERGIA_BACKGROUND_SYNC=true` włącza). Zob. `docs/notifications.md`.
+- Gwarancja „co najwyżej raz”: zapis stanu przed pokazaniem + deterministyczne identyfikatory
+  powiadomień zamiast blokad międzyprocesowych (izolaty jednego procesu nie dzielą blokad
+  plików).
+- Zadanie w tle nie loguje się nigdy; wygasła sesja wstrzymuje monitorowanie.
+- `SynergiaApiClient`: przy 401 jedna próba z ciasteczkami z magazynu (rotacja w innym
+  kontekście). `MessagesApiClient`: przekazywanie `Retry-After`.
+- `KeyValueStore` przeniesiony do `core/storage` (używany przez wiadomości robocze i powiadomienia).

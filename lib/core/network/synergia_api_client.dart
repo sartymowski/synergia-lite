@@ -117,8 +117,9 @@ class SynergiaApiClient {
 
   Future<Map<String, dynamic>> _send(
     String path,
-    Map<String, String>? query,
-  ) async {
+    Map<String, String>? query, {
+    bool retriedWithStored = false,
+  }) async {
     final session = _session ??= await _store.read();
     if (session == null || session.isEmpty) {
       throw const SessionExpiredException();
@@ -141,6 +142,21 @@ class SynergiaApiClient {
       if (!identical(updated, session)) {
         _session = updated;
         await _store.write(updated);
+      }
+    }
+
+    // Inny kontekst (np. zadanie w tle WorkManagera) mógł zapisać nowsze
+    // ciasteczka, a ten klient używał kopii z pamięci — jedna próba z
+    // aktualnymi danymi z magazynu, zanim uznamy sesję za wygasłą.
+    final status = response.statusCode ?? 0;
+    if (!retriedWithStored &&
+        (status == 401 || status == 403 || (status >= 300 && status < 400))) {
+      final stored = await _store.read();
+      if (stored != null &&
+          !stored.isEmpty &&
+          stored.toHeader() != _session?.toHeader()) {
+        _session = stored;
+        return _send(path, query, retriedWithStored: true);
       }
     }
 

@@ -50,8 +50,11 @@ Testy nie wymagają sieci ani danych logowania; fixture'y w `test/fixtures` są 
 - [docs/architecture.md](docs/architecture.md) — struktura aplikacji
 - [docs/integration-status.md](docs/integration-status.md) — co działa, co niesprawdzone, jak testować
 - [docs/decisions.md](docs/decisions.md) — decyzje techniczne i zależności
+- [docs/messages-api.md](docs/messages-api.md) — moduł Wiadomości: kontrakt API i stan weryfikacji
+- [docs/notifications.md](docs/notifications.md) — powiadomienia: audyt, dopuszczalność, gwarancje, checklista
 
 ## Prywatność
 
 Aplikacja nie loguje haseł, ciasteczek ani danych ucznia. Wylogowanie usuwa sesję,
-ciasteczka i dane WebView z telefonu.
+ciasteczka, dane WebView oraz lokalne (zaszyfrowane) wiadomości robocze z telefonu.
+Treść wiadomości jest wyświetlana bez WebView — bez JavaScriptu i bez pobierania obrazów.

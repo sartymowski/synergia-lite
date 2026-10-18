@@ -12,6 +12,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Wymagane przez flutter_local_notifications (java.time na starszych Androidach).
+        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
@@ -47,4 +49,5 @@ flutter {
 dependencies {
     // CookieManagerCompat.getCookieInfo — ta sama wersja co w webview_flutter_android.
     implementation("androidx.webkit:webkit:1.15.0")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

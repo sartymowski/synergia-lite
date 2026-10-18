@@ -55,7 +55,7 @@ oraz `synergia.librus.pl/wiadomosci2` (aktywacja modułu wiadomości). Odśwież
   dla `api.librus.pl/3.0`; te tokeny **nie działają** na `gateway/api/2.0` (401).
   To API używane przez oficjalną aplikację mobilną, nieudokumentowane publicznie.
 
-Synergia Lite startuje z punktu wejścia `synergia.librus.pl/loguj/portalRodzina` (adres portalu `portal.librus.pl/rodzina/synergia/loguj` przekierowuje dziś na stronę główną portalu),
+Synergia Lite startuje z `portal.librus.pl/rodzina` — formularz działa tylko w iframe strony portalu `/rodzina/synergia/loguj` (szczegóły: integration-status.md, „Błąd: pętla”),
 więc obsłuży ten wariant, który użytkownik wybierze na stronie Librusa — **do potwierdzenia na żywo**.
 
 ### Pobieranie danych w Librusku (gateway/api/2.0)

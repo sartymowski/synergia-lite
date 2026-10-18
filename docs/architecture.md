@@ -9,14 +9,17 @@ lib/
     app.dart                MaterialApp.router, motyw jasny/ciemny
     router.dart             GoRouter: /splash, /login, / (przekierowania wg sesji)
     providers.dart          wiązanie zależności + AuthController
-    home_screen.dart        tymczasowa powłoka etapu A (Oceny, Plan)
+    home_screen.dart        powłoka: Oceny, Plan lekcji, Wiadomości (licznik nieprzeczytanych)
     theme.dart
   core/
     errors/                 SynergiaException (sealed) — komunikaty dla użytkownika
     network/
       session_cookies.dart  ciasteczka sesji, rotacja z Set-Cookie
       web_cookie.dart       ciasteczko z atrybutami (domena, ścieżka, flagi, wygaśnięcie)
-      synergia_api_client.dart  jedyne miejsce znające adresy i HTTP
+      synergia_api_client.dart  klient gateway/api/2.0
+      request_queue.dart    kolejka żądań z minimalnym odstępem
+    storage/
+      key_value_store.dart  zaszyfrowany magazyn klucz–wartość (szkice, stan powiadomień)
     security/
       session_store.dart    flutter_secure_storage / pamięć (testy)
   features/
@@ -31,6 +34,19 @@ lib/
       presentation/         GradesView
     timetable/
       data/ domain/ presentation/
+    messages/
+      data/                 MessagesApiClient (wiadomosci3, ciasteczka wiadomości w pamięci,
+                            odnowienie sesji dla GET, POST bez ponowień), MessagesParser,
+                            MessagesRepository (klasyfikacja wyniku wysyłki), DraftsStore
+      domain/               MessageSummary, MessageDetail, MessageRecipient, MessageAttachment,
+                            MessageDraft, MessageFolder, SendOutcome, bezpieczny parser treści
+      presentation/         MessagesTab (Odebrane/Wysłane/Robocze), lista, szczegóły,
+                            ComposeScreen + ComposeController, wybór odbiorców
+    notifications/
+      data/                 MessageNotificationChecker (jedno sprawdzenie), stan synchronizacji,
+                            LocalNotificationService, WorkManager (callbackDispatcher)
+      domain/               detekcja nowych wiadomości, stan, payload, zasady (flaga tła)
+      presentation/         SettingsScreen (Powiadomienia), providery, obsługa kliknięć
     diagnostics/
       data/                 IntegrationProbe (kontrola negatywna, Me, Grades, Timetables)
       domain/               DiagnosticReport — tylko struktura, bez wartości

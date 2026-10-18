@@ -1,5 +1,11 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 13+: zgoda na powiadomienia o nowych wiadomościach. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Sprawdzanie wiadomości nie używa usług pierwszoplanowych (workmanager je dokłada). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SHORT_SERVICE" tools:node="remove" />
     <!-- Sesja (zaszyfrowana kluczem z Keystore) nie może trafić do kopii zapasowej. -->
     <application
         android:label="Synergia Lite"

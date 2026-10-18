@@ -4,6 +4,7 @@ import '../../../core/network/web_cookie.dart';
 import '../../../shared/json_read.dart';
 import '../../auth/domain/account_info.dart';
 import '../../grades/data/grades_parser.dart';
+import '../../messages/data/messages_api_client.dart';
 import '../../timetable/data/timetable_parser.dart';
 import '../../timetable/domain/lesson.dart';
 import '../domain/diagnostic_report.dart';
@@ -11,10 +12,14 @@ import '../domain/diagnostic_report.dart';
 /// Sprawdza sesję i odczyt danych, raportując wyłącznie strukturę odpowiedzi.
 /// Nigdy nie umieszcza w raporcie wartości ciasteczek ani treści danych.
 class IntegrationProbe {
-  IntegrationProbe(this._api, {DateTime Function()? clock})
+  IntegrationProbe(this._api, {DateTime Function()? clock, this.messages})
     : _clock = clock ?? DateTime.now;
 
   final SynergiaApiClient _api;
+
+  /// Opcjonalnie: odczytowe sprawdzenie serwisu wiadomości. Nie otwiera
+  /// żadnej wiadomości (otwarcie oznacza ją jako przeczytaną).
+  final MessagesApiClient? messages;
   final DateTime Function() _clock;
 
   Future<DiagnosticReport> run({
@@ -37,6 +42,7 @@ class IntegrationProbe {
     if (verdict != AuthVerdict.notAuthenticated) {
       checks.add(await _grades());
       checks.add(await _timetable());
+      if (messages case final m?) checks.addAll(await _messages(m));
     }
     return DiagnosticReport(
       createdAt: _clock(),
@@ -167,6 +173,103 @@ class IntegrationProbe {
     },
   );
 
+  Future<List<DiagnosticCheck>> _messages(MessagesApiClient m) async {
+    final bootstrap = await _guard(
+      'Wiadomości: inicjalizacja (wiadomosci3)',
+      () async {
+        await m.bootstrap();
+        return DiagnosticCheck(
+          'Wiadomości: inicjalizacja (wiadomosci3)',
+          CheckStatus.ok,
+          [
+            'ciasteczka serwisu wiadomości (nazwy): ${m.cookieNames.join(', ')}',
+          ],
+        );
+      },
+    );
+    if (bootstrap.status != CheckStatus.ok) return [bootstrap];
+
+    Future<DiagnosticCheck> read(
+      String title,
+      String path,
+      List<String> Function(Object?) describe,
+    ) => _guard(title, () async {
+      final json = await m.get(path);
+      return DiagnosticCheck(title, CheckStatus.ok, [
+        'HTTP 2xx',
+        ...describe(json),
+      ]);
+    });
+
+    final groups = await read(
+      'Wiadomości: receivers/types',
+      'receivers/types?includeClass=true',
+      (json) {
+        final list = _mapOrNull(_dataOf(json))?['list'];
+        return [
+          if (list is List) ...[
+            'grup odbiorców: ${list.length}',
+            'identyfikatory: ${[for (final g in list.whereType<Map>()) '${g['id']}'].join(', ')}',
+          ] else
+            'brak listy grup; ${_describe(json)}',
+        ];
+      },
+    );
+    return [
+      bootstrap,
+      await read(
+        'Wiadomości: me',
+        'me',
+        (json) => [
+          'struktura: ${_describe(json)}',
+          'data: ${_describe(_dataOf(json))}',
+        ],
+      ),
+      await read(
+        'Wiadomości: inbox/unreadMessagesCount',
+        'inbox/unreadMessagesCount',
+        (json) => ['data: ${_describe(_dataOf(json))}'],
+      ),
+      await read(
+        'Wiadomości: inbox/messages (strona 1)',
+        'inbox/messages?page=1&limit=10',
+        _describeList,
+      ),
+      await read(
+        'Wiadomości: outbox/messages (strona 1)',
+        'outbox/messages?page=1&limit=10',
+        _describeList,
+      ),
+      groups,
+    ];
+  }
+
+  static List<String> _describeList(Object? json) {
+    final list = json is List ? json : (json is Map ? json['data'] : null);
+    if (list is! List) return ['brak listy; ${_describe(json)}'];
+    return [
+      json is List
+          ? 'goła lista (bez koperty data)'
+          : 'koperta: ${_describe(json)}',
+      'rekordów: ${list.length}',
+      if (json is Map && json['total'] != null) 'total: ${json['total']}',
+      if (list.firstOrNull case final Map first)
+        'pola rekordu: ${_describe(first)}',
+    ];
+  }
+
+  static Object? _dataOf(Object? json) => json is Map ? json['data'] : null;
+
+  static Map? _mapOrNull(Object? v) => v is Map ? v : null;
+
+  /// Nazwy kluczy albo typ — nigdy wartości.
+  static String _describe(Object? json) => switch (json) {
+    final Map m => '{${(m.keys.map((k) => '$k').toList()..sort()).join(', ')}}',
+    final List l => 'lista(${l.length})',
+    null => 'null',
+    _ => json.runtimeType.toString(),
+  };
+
   Future<DiagnosticCheck> _guard(
     String title,
     Future<DiagnosticCheck> Function() body, {
@@ -189,6 +292,11 @@ class IntegrationProbe {
     UnexpectedResponseException(:final detail) =>
       'nieoczekiwany format: $detail',
     LoginNotCompletedException() => 'logowanie niedokończone',
+    MessagesUnavailableException() =>
+      'moduł Wiadomości niedostępny (Brak dostępu)',
+    MessagesSessionExpiredException() =>
+      'sesja wiadomości odrzucona po odnowieniu',
+    PermissionDeniedException() => 'HTTP 403 — brak uprawnień',
   };
 
   static String _keys(Map<String, dynamic> map) =>

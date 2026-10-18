@@ -65,3 +65,25 @@ final class LoginNotCompletedException extends SynergiaException {
 
   final List<String> cookieNames;
 }
+
+/// Szkoła nie udostępnia modułu Wiadomości temu kontu (strona „Brak dostępu”).
+final class MessagesUnavailableException extends SynergiaException {
+  const MessagesUnavailableException()
+    : super('Moduł Wiadomości nie jest dostępny dla tego konta.');
+}
+
+/// Sesja serwisu wiadomości wygasła i nie udało się jej odnowić
+/// (sesja Synergii może nadal działać).
+final class MessagesSessionExpiredException extends SynergiaException {
+  const MessagesSessionExpiredException()
+    : super(
+        'Nie udało się odnowić sesji wiadomości. Spróbuj ponownie później '
+        'albo zaloguj się ponownie.',
+      );
+}
+
+/// Serwer odmówił dostępu do zasobu lub operacji (HTTP 403).
+final class PermissionDeniedException extends SynergiaException {
+  const PermissionDeniedException()
+    : super('Brak uprawnień do tej operacji na tym koncie.');
+}

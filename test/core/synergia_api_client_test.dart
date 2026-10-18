@@ -192,6 +192,36 @@ void main() {
     expect(adapter.requests.single.uri.toString(), SynergiaApiClient.logoutUrl);
   });
 
+  test(
+    "401 z nieaktualnymi ciasteczkami w pamięci → jedna próba z magazynu",
+    () async {
+      final adapter = FakeAdapter(
+        (o) => o.headers["Cookie"] == "DZIENNIKSID=s2"
+            ? jsonBody({"Me": {}})
+            : jsonBody({}, status: 401),
+      );
+      final api = client(adapter);
+      store.session = SessionCookies({"DZIENNIKSID": "s1"});
+      await expectLater(api.get("Me"), throwsA(isA<SessionExpiredException>()));
+      // Zadanie w tle zapisało nowsze ciasteczka.
+      store.session = SessionCookies({"DZIENNIKSID": "s2"});
+      expect(await api.get("Me"), {"Me": {}});
+      expect(
+        adapter.requests.map((r) => r.headers["Cookie"]).toList().sublist(1),
+        ["DZIENNIKSID=s1", "DZIENNIKSID=s2"],
+      );
+    },
+  );
+
+  test("401 przy aktualnych ciasteczkach: bez dodatkowego żądania", () async {
+    final adapter = FakeAdapter((_) => jsonBody({}, status: 401));
+    await expectLater(
+      client(adapter).get("Me"),
+      throwsA(isA<SessionExpiredException>()),
+    );
+    expect(adapter.requests, hasLength(1));
+  });
+
   group('ochrona ciasteczek', () {
     for (final path in [
       'https://example.com/Me',

@@ -8,6 +8,7 @@ import 'package:synergia_lite/features/diagnostics/data/integration_probe.dart';
 import 'package:synergia_lite/features/diagnostics/domain/diagnostic_report.dart';
 
 import '../../helpers/fake_http.dart';
+import '../../helpers/messages_fakes.dart';
 
 /// Wartości, które nie mogą pojawić się w raporcie.
 const _secrets = [
@@ -233,5 +234,95 @@ void main() {
       'limit zapytań (Retry-After: 60 s)',
     );
     expect(report.toText(), isNot(contains('TOKEN_SECRET_2')));
+  });
+
+  group('wiadomości (tylko odczyt)', () {
+    Future<(DiagnosticReport, FakeMessagesServer)> runWithMessages(
+      FakeMessagesServer server,
+    ) async {
+      final adapter = FakeAdapter(_livingAccount);
+      final api = SynergiaApiClient(
+        sessionStore: InMemorySessionStore(
+          SessionCookies.fromWebCookies(_webCookies),
+        ),
+        dio: fakeDio(adapter),
+        minInterval: Duration.zero,
+      );
+      final report = await IntegrationProbe(
+        api,
+        clock: () => now,
+        messages: fakeMessagesClient(server).client,
+      ).run(webCookies: _webCookies);
+      return (report, server);
+    }
+
+    test('struktura bez danych i bez otwierania wiadomości', () async {
+      final (report, server) = await runWithMessages(
+        FakeMessagesServer(
+          api: {
+            'me': (_) => jsonBody({
+              'data': {'accountId': 'KONTO_LOGIN_X', 'firstName': 'Wiktoria'},
+            }),
+            'inbox/unreadMessagesCount': (_) => jsonBody({
+              'data': {'inbox': 2, 'notes': 0},
+            }),
+            'inbox/messages': (_) => jsonBody({
+              'data': [
+                inboxItem(
+                  '1',
+                  sender: 'Wiktoria Sekretna',
+                  topic: 'SALA-SENTINEL',
+                ),
+              ],
+              'total': 1,
+            }),
+            'outbox/messages': (_) =>
+                jsonBody([outboxItem('2', receiver: 'NauczycielX Y')]),
+            'receivers/types': (_) => jsonBody({
+              'data': {
+                'list': [
+                  {'id': 'teachers', 'name': 'Nauczyciele'},
+                ],
+              },
+            }),
+          },
+        ),
+      );
+      final text = report.toText();
+      for (final secret in _secrets) {
+        expect(text, isNot(contains(secret)), reason: secret);
+      }
+      expect(
+        text,
+        isNot(contains('JEDNORAZOWY')),
+        reason: 'token MultiDomainLogon',
+      );
+      expect(text, contains('[OK] Wiadomości: inicjalizacja (wiadomosci3)'));
+      expect(text, contains('ciasteczka serwisu wiadomości (nazwy): WIADSID'));
+      expect(text, contains('rekordów: 1'));
+      expect(text, contains('goła lista (bez koperty data)'));
+      expect(text, contains('identyfikatory: teachers'));
+      expect(
+        server.calls.where((c) => RegExp(r'/messages/\d').hasMatch(c)),
+        isEmpty,
+        reason: 'diagnostyka nie może oznaczać wiadomości jako przeczytanych',
+      );
+      expect(server.calls.where((c) => c.startsWith('POST')), isEmpty);
+    });
+
+    test('szkoła bez modułu: jeden czytelny wpis', () async {
+      final (report, _) = await runWithMessages(
+        FakeMessagesServer(bootstrap: (_) => textBody('Brak dostępu')),
+      );
+      final check = report.checks.firstWhere(
+        (c) => c.title.startsWith('Wiadomości'),
+      );
+      expect(check.status, CheckStatus.failed);
+      expect(check.facts.single, contains('Brak dostępu'));
+      expect(
+        report.checks.where((c) => c.title.startsWith('Wiadomości')),
+        hasLength(1),
+      );
+    });
   });
 }

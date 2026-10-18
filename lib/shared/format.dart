@@ -19,3 +19,10 @@ String weekdayName(DateTime d) => _weekdays[d.weekday - 1];
 
 /// Polski zapis z przecinkiem: `4,57`.
 String formatAverage(double v) => v.toStringAsFixed(2).replaceAll('.', ',');
+
+/// Na liście: dziś „HH:mm”, wcześniej „dd.MM.yyyy”.
+String formatListDate(DateTime d, {DateTime? now}) {
+  final n = now ?? DateTime.now();
+  final sameDay = d.year == n.year && d.month == n.month && d.day == n.day;
+  return sameDay ? '${_two(d.hour)}:${_two(d.minute)}' : formatDate(d);
+}

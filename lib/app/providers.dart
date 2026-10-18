@@ -8,6 +8,10 @@ import '../features/auth/data/auth_repository.dart';
 import '../features/auth/data/webview_session.dart';
 import '../features/auth/domain/account_info.dart';
 import '../features/grades/data/grades_repository.dart';
+import '../features/messages/data/drafts_store.dart';
+import '../features/messages/data/messages_api_client.dart';
+import '../features/messages/data/messages_repository.dart';
+import '../features/notifications/presentation/notifications_providers.dart';
 import '../features/grades/domain/grades_overview.dart';
 import '../features/timetable/data/timetable_repository.dart';
 import '../features/timetable/domain/lesson.dart';
@@ -60,8 +64,14 @@ class AuthController extends AsyncNotifier<AuthState> {
     return account;
   }
 
+  /// Świadome wylogowanie usuwa także lokalne wiadomości robocze. Klient
+  /// wiadomości (ciasteczka w pamięci) jest odtwarzany przy zmianie stanu.
   Future<void> logout() async {
+    // Najpierw koniec monitorowania (trwające zadanie w tle sprawdza sesję
+    // i ustawienia przed pokazaniem powiadomienia).
+    await ref.read(notificationsCleanupProvider)();
     await _repo.logout();
+    await ref.read(draftsStoreProvider).clearAll();
     state = const AsyncData(SignedOut());
   }
 
@@ -75,8 +85,9 @@ final authControllerProvider = AsyncNotifierProvider<AuthController, AuthState>(
   AuthController.new,
 );
 
-/// Wylogowuje lokalnie, gdy serwer odrzuci sesję, i przekazuje błąd dalej.
-Future<T> _guardSession<T>(Ref ref, Future<T> Function() load) async {
+/// Wylogowuje lokalnie, gdy serwer odrzuci sesję Synergii, i przekazuje błąd dalej.
+/// Robocze wiadomości zostają (to może być chwilowe wygaśnięcie tego samego konta).
+Future<T> guardSession<T>(Ref ref, Future<T> Function() load) async {
   try {
     return await load();
   } on SessionExpiredException {
@@ -86,7 +97,7 @@ Future<T> _guardSession<T>(Ref ref, Future<T> Function() load) async {
 }
 
 final accountProvider = FutureProvider.autoDispose<AccountInfo?>(
-  (ref) => _guardSession(
+  (ref) => guardSession(
     ref,
     () async =>
         AccountInfo.tryParse(await ref.read(apiClientProvider).get('Me')),
@@ -94,7 +105,7 @@ final accountProvider = FutureProvider.autoDispose<AccountInfo?>(
 );
 
 final gradesOverviewProvider = FutureProvider.autoDispose<GradesOverview>(
-  (ref) => _guardSession(
+  (ref) => guardSession(
     ref,
     () => GradesRepository(ref.read(apiClientProvider)).fetchOverview(),
   ),
@@ -102,9 +113,27 @@ final gradesOverviewProvider = FutureProvider.autoDispose<GradesOverview>(
 
 final timetableWeekProvider = FutureProvider.autoDispose
     .family<TimetableWeek, DateTime>(
-      (ref, monday) => _guardSession(
+      (ref, monday) => guardSession(
         ref,
         () =>
             TimetableRepository(ref.read(apiClientProvider)).fetchWeek(monday),
       ),
     );
+
+final draftsStoreProvider = Provider<DraftsStore>(
+  (ref) => DraftsStore(SecureKeyValueStore()),
+);
+
+/// Odtwarzany przy każdej zmianie stanu logowania — ciasteczka serwisu
+/// wiadomości (tylko w pamięci) nie przechodzą między sesjami.
+final messagesApiClientProvider = Provider<MessagesApiClient>((ref) {
+  ref.watch(authControllerProvider.select((s) => s.value is SignedIn));
+  return MessagesApiClient(
+    synergiaSession: ref.watch(sessionStoreProvider),
+    onSynergiaCookiesChanged: () => ref.read(apiClientProvider).resetSession(),
+  );
+});
+
+final messagesRepositoryProvider = Provider<MessagesRepository>(
+  (ref) => MessagesRepository(ref.watch(messagesApiClientProvider)),
+);
