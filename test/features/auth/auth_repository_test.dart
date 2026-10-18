@@ -76,7 +76,8 @@ void main() {
       ),
     );
     expect(store.session, isNull);
-    expect(cleaner.calls, 1);
+    // Regresja 2026-10-18: WebView NIE może być czyszczony w trakcie logowania.
+    expect(cleaner.calls, 0);
   });
 
   test('Me 200 bez obiektu konta nie jest uznane za zalogowanie', () async {
@@ -86,7 +87,7 @@ void main() {
       throwsA(isA<UnexpectedResponseException>()),
     );
     expect(store.session, isNull);
-    expect(cleaner.calls, 1);
+    expect(cleaner.calls, 0);
   });
 
   test('limit zapytań przy logowaniu nie zostawia sesji', () async {

@@ -27,7 +27,8 @@ class AuthRepository {
   }
 
   /// Zapisuje ciasteczka z WebView i od razu sprawdza je na `Me`.
-  /// Nieudana weryfikacja nie zostawia po sobie zapisanej sesji.
+  /// Nieudana weryfikacja nie zostawia po sobie zapisanej sesji, ale NIE
+  /// czyści WebView — logowanie może być wciąż w toku (np. `oauth_state`).
   Future<AccountInfo> completeLogin(SessionCookies cookies) async {
     await _store.write(cookies);
     _api.resetSession();
@@ -36,10 +37,10 @@ class AuthRepository {
       return AccountInfo.tryParse(me) ??
           (throw const UnexpectedResponseException('Me: brak obiektu konta'));
     } on SessionExpiredException {
-      await _discardLocal();
+      await _discardStoredSession();
       throw LoginNotCompletedException(cookies.names.toList()..sort());
     } on SynergiaException {
-      await _discardLocal();
+      await _discardStoredSession();
       rethrow;
     }
   }
@@ -52,9 +53,13 @@ class AuthRepository {
   /// Sesja odrzucona przez serwer — usuwamy ją, ale nie wołamy `wyloguj`.
   Future<void> onSessionExpired() => _discardLocal();
 
-  Future<void> _discardLocal() async {
+  Future<void> _discardStoredSession() async {
     _api.resetSession();
     await _store.clear();
+  }
+
+  Future<void> _discardLocal() async {
+    await _discardStoredSession();
     await _webCleaner.clear();
   }
 }

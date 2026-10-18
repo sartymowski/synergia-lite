@@ -3,14 +3,10 @@ import 'package:synergia_lite/features/auth/data/webview_session.dart';
 import 'package:synergia_lite/features/auth/domain/account_info.dart';
 
 void main() {
-  test('adres startowy to wejście portalRodzina ze znacznikiem czasu', () {
-    final uri = loginStartUri(
-      DateTime.fromMillisecondsSinceEpoch(1792320000000),
-    );
-    expect(
-      uri.toString(),
-      'https://synergia.librus.pl/loguj/portalRodzina?v=1792320000',
-    );
+  // Zmiana 2026-10-18: formularz Synergii działa tylko w iframe portalu
+  // (redirectToPortalIfNotInIframe), więc start to strona portalu.
+  test('adres startowy to strona główna portalu Librus Rodzina', () {
+    expect(loginStartUri().toString(), 'https://portal.librus.pl/rodzina');
   });
 
   group('isAllowedMainFrame', () {

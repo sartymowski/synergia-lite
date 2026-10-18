@@ -2,39 +2,16 @@ import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../core/network/web_cookie.dart';
+import '../domain/login_flow.dart';
 import 'auth_repository.dart';
 
-/// Wejście do przepływu OAuth portalu Librus Rodzina — ten sam adres, od którego
-/// zaczyna przeglądarka. Prowadzi wprost (główna ramka, bez iframe) do formularza
-/// `api.librus.pl/OAuth/Authorization`; 2FA i Cloudflare Turnstile obsługuje
-/// strona Librusa.
-Uri loginStartUri([DateTime? now]) => Uri.https(
-  'synergia.librus.pl',
-  '/loguj/portalRodzina',
-  {'v': '${(now ?? DateTime.now()).millisecondsSinceEpoch ~/ 1000}'},
-);
+export '../domain/login_flow.dart'
+    show isAllowedMainFrame, isLibrusHost, isPostLoginUrl, redactUrl;
 
-bool isLibrusHost(String host) =>
-    host == 'librus.pl' || host.endsWith('.librus.pl');
-
-/// Główna ramka może odwiedzać tylko strony Librusa po HTTPS.
-/// Ramki podrzędne (np. Cloudflare Turnstile) zostawiamy stronie.
-bool isAllowedMainFrame(Uri url) =>
-    url.toString() == 'about:blank' ||
-    (url.scheme == 'https' && isLibrusHost(url.host));
-
-/// Logowanie uznajemy za zakończone, gdy główna ramka trafi do Synergii
-/// poza ścieżkami logowania (np. `/rodzic/index`, `/uczen/index`).
-/// To tylko sygnał do sprawdzenia sesji — o sukcesie decyduje `Me`.
-bool isPostLoginUrl(Uri? url) =>
-    url != null &&
-    url.scheme == 'https' &&
-    url.host == 'synergia.librus.pl' &&
-    !url.path.startsWith('/loguj') &&
-    !url.path.startsWith('/wyloguj');
-
-/// Adres bez zapytania i fragmentu — w nich bywają `code` i `state` OAuth.
-String redactUrl(Uri url) => '${url.scheme}://${url.host}${url.path}';
+/// Strona główna portalu Librus Rodzina. Formularz Synergii działa tylko
+/// w iframe strony `/rodzina/synergia/loguj`, na którą portal wpuszcza po
+/// przejściu z portalu — zob. [LoginFlow].
+Uri loginStartUri() => LoginFlow.startUri;
 
 const _cookieChannel = MethodChannel('pl.synergialite/cookies');
 
