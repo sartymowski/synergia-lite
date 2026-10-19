@@ -176,3 +176,27 @@ i ponawia ją `loadUrl` bez `Referer` — co dawało pętlę. Dlatego:
 - Wiadomości: `wiadomosci3` w kroku 3 przekierowuje na `http://wiadomosci.librus.pl` przy
   ponownej inicjalizacji. Dla hostów `*.librus.pl` (port domyślny) `http` → `https`;
   obce domeny i inne schematy nadal odrzucane. Komunikat błędu podaje tylko schemat i host.
+
+## D16. Wydania Androida: własny klucz poza repozytorium, fail-closed (2026-10-20)
+
+- Release podpisywany wyłącznie kluczem wydań (PKCS12, RSA 4096) z
+  `%USERPROFILE%\.synergia-lite\`; konfiguracja bez haseł, hasło tylko w zmiennej
+  środowiskowej procesu (`tool/build_release.ps1` pyta w terminalu i usuwa je po buildzie).
+  Bez klucza zadanie `preReleaseBuild` kończy się błędem — nigdy podpis kluczem debug.
+- `applicationId` pozostaje `pl.synergialite.synergia_lite` (bez „librus”); zmiana po
+  pierwszym wydaniu oznaczałaby nową aplikację. Buildy deweloperskie (`1.0.0+1`, klucz
+  debug) nie zaktualizują się do bety — jednorazowe odinstalowanie.
+- Wersje: `pubspec.yaml` `X.Y.Z[-beta.N]+versionCode`, `versionCode` rośnie o 1 przy
+  każdym wydaniu; pierwsza beta `1.0.0-beta.1+2`.
+- APK uniwersalny (jeden plik dla testerów), dystrybucja ręczna, SHA-256 + manifest
+  wydania w `dist\` (poza Git). Bez automatycznych aktualizacji w aplikacji.
+
+## D17. Konfiguracja beta: `BuildConfig`, diagnostyka tylko dla programisty (2026-10-20)
+
+- `lib/app/build_config.dart`: diagnostyka = debug lub `SYNERGIA_DIAGNOSTICS`; log
+  nawigacji, „Sprawdź teraz”, zdalne debugowanie WebView — tylko debug. Istniejące flagi
+  (`SYNERGIA_BACKGROUND_SYNC`, `SYNERGIA_NATIVE_EXCUSE_SUBMIT`) bez zmian, domyślnie false.
+- `network_security_config.xml`: bez cleartext (także WebView), tylko systemowe CA.
+- Wylogowanie: kroki niezależne, pierwszy błąd zgłaszany po wykonaniu wszystkich.
+- „O aplikacji”: wersja, informacja o nieoficjalnym charakterze, aktywne funkcje
+  eksperymentalne, licencje bibliotek (`showLicensePage`).

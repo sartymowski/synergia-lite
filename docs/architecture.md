@@ -96,3 +96,10 @@ lokalizacja przez `intl`, powiadomienia.
   `getSynergiaCookies` (tylko `https://synergia.librus.pl/`) i `flush`.
 - `AndroidManifest.xml`: `INTERNET`, `allowBackup=false`, `usesCleartextTraffic=false`.
 - `tool/flutter_android.ps1` — uruchamianie Gradle przy przechwytywaniu HTTPS (decisions D9).
+
+## Konfiguracja buildu (beta, 2026-10-20)
+
+`lib/app/build_config.dart` — jedno miejsce decyzji zależnych od rodzaju buildu
+(diagnostyka, narzędzia programisty, zdalne debugowanie WebView, aktywne funkcje
+eksperymentalne, wersja). Zasada fail-closed; szczegóły: README „Flagi buildu”, D16–D17.
+Podpis i wydania: `android/app/build.gradle.kts`, `tool/build_release.ps1`, docs/release.md.

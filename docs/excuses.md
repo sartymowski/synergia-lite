@@ -66,7 +66,7 @@ jeszcze spełniona. Domenowe `ExcuseSubmission` też celowo nie istnieje.
 
 ## 2. Jak ustalić kontrakt na Twojej sesji (bezpiecznie)
 
-Diagnostyka (ikona tarczy) ma dwa nowe kroki tylko do odczytu:
+Diagnostyka (ikona tarczy; od bety 1 tylko w buildach debug lub z `SYNERGIA_DIAGNOSTICS=true`) ma dwa kroki tylko do odczytu:
 
 - **„e-Usprawiedliwienia: Justifications”** — koperta, liczba zgłoszeń, wartości statusu,
   nazwy pól (bez uzasadnień i dat).
