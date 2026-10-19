@@ -99,6 +99,50 @@ void main() {
       );
     });
 
+    test(
+      "przekierowanie http na host Librusa jest podnoszone do https (regresja 2026-10-19)",
+      () async {
+        final server = FakeMessagesServer(
+          bootstrap: (_) =>
+              redirect("http://wiadomosci.librus.pl/MultiDomainLogon?token=X"),
+          api: {"me": (_) => jsonBody({})},
+        );
+        final f = fakeMessagesClient(server);
+        await f.client.get("me");
+        expect(
+          f.adapter.requests.every((r) => r.uri.scheme == "https"),
+          isTrue,
+          reason: "nic jawnym tekstem",
+        );
+        expect(
+          f.adapter.requests[1].uri.toString(),
+          startsWith("https://wiadomosci.librus.pl/MultiDomainLogon"),
+        );
+      },
+    );
+
+    test("http na obcy host i inny port nadal są odrzucane", () async {
+      for (final target in [
+        "http://evil.example/x",
+        "http://wiadomosci.librus.pl:8080/x",
+        "ftp://wiadomosci.librus.pl/x",
+      ]) {
+        final f = fakeMessagesClient(
+          FakeMessagesServer(bootstrap: (_) => redirect(target)),
+        );
+        await expectLater(
+          f.client.get("me"),
+          throwsA(isA<UnexpectedResponseException>()),
+          reason: target,
+        );
+        expect(
+          f.adapter.requests,
+          hasLength(1),
+          reason: "bez żądania pod odrzucony adres",
+        );
+      }
+    });
+
     test('brak ciasteczek wiadomości po inicjalizacji', () async {
       final server = FakeMessagesServer(
         bootstrap: (_) => textBody('<html>ok</html>'),

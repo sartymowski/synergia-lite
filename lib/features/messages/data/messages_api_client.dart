@@ -112,10 +112,23 @@ class MessagesApiClient {
             'wiadomosci3: przekierowanie bez adresu',
           );
         }
-        final next = url.resolve(location);
+        var next = url.resolve(location);
+        // Librus w kroku MultiDomainLogon potrafi wskazać `http://` (zgłoszone
+        // 2026-10-19 przy ponownej inicjalizacji). Dla własnych hostów Librusa
+        // podnosimy do HTTPS (jak przeglądarka z HSTS) — nic nie idzie jawnym
+        // tekstem; inne schematy i obce domeny są nadal odrzucane.
+        if (next.scheme == 'http' &&
+            isLibrusHost(next.host) &&
+            (!next.hasPort || next.port == 80)) {
+          next = next.replace(scheme: 'https', port: 443);
+        }
         if (next.scheme != 'https' || !isLibrusHost(next.host)) {
-          throw const UnexpectedResponseException(
-            'wiadomosci3: przekierowanie poza librus.pl',
+          // Tylko schemat i host celu — bez ścieżki i parametrów (tokeny).
+          throw UnexpectedResponseException(
+            'wiadomosci3: odrzucone przekierowanie (krok ${hop + 1}) na '
+            '${next.scheme.isEmpty ? "(brak schematu)" : next.scheme}://'
+            '${next.host.isEmpty ? "(brak hosta)" : next.host}'
+            '${next.scheme != "https" ? " — nie HTTPS" : " — host spoza librus.pl"}',
           );
         }
         if (_isLoginPage(next)) throw const SessionExpiredException();

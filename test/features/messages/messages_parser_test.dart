@@ -312,6 +312,15 @@ void main() {
       'K1',
     );
     expect(MessagesParser.accountKey({'accountId': 7}), '7');
+    // Kształt potwierdzony na żywo 2026-10-19: pola na poziomie głównym, data = null.
+    expect(
+      MessagesParser.accountKey({
+        'accountId': 'K9',
+        'firstName': 'X',
+        'data': null,
+      }),
+      'K9',
+    );
     expect(
       () => MessagesParser.accountKey({'data': {}}),
       throwsA(isA<UnexpectedResponseException>()),
