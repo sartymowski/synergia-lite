@@ -43,3 +43,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Wydania (tool/build_release.ps1) — APK i manifesty trafiają do dystrybucji
+# poza Git; klucze i konfiguracja podpisu nigdy nie trafiają do repozytorium.
+/dist/
+*.jks
+*.keystore
+*.p12
+*.pfx
+key.properties
+release-signing.properties

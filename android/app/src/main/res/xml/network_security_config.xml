@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tylko HTTPS (także w WebView na Androidzie 8+) i tylko systemowe urzędy
+     certyfikacji — certyfikaty doinstalowane przez użytkownika nie są ufane,
+     więc proxy przechwytujące ruch na telefonie nie odczyta sesji. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
