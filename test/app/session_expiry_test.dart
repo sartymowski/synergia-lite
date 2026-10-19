@@ -16,10 +16,16 @@ import '../helpers/fake_http.dart';
 import '../helpers/notification_fakes.dart';
 
 class _Cleaner implements WebSessionCleaner {
+  _Cleaner({this.fail = false});
+
+  final bool fail;
   int calls = 0;
 
   @override
-  Future<void> clear() async => calls++;
+  Future<void> clear() async {
+    calls++;
+    if (fail) throw StateError('wtyczka WebView niedostępna');
+  }
 }
 
 void main() {
@@ -138,5 +144,21 @@ void main() {
       reason: "ustawienia i stan synchronizacji usunięte",
     );
     expect(notifier.cancelled, 1, reason: "pokazane powiadomienia usunięte");
+  });
+
+  test('błąd czyszczenia WebView nie zostawia sesji ani roboczych', () async {
+    cleaner = _Cleaner(fail: true);
+    final c = container(FakeAdapter((_) => textBody('')));
+    await c.read(authControllerProvider.future);
+    await DraftsStore(
+      drafts,
+    ).save('konto-1', MessageDraft.create().copyWith(topic: 'Szkic'));
+    await expectLater(
+      c.read(authControllerProvider.notifier).logout(),
+      throwsA(isA<StateError>()),
+    );
+    expect(store.session, isNull);
+    expect(drafts.values, isEmpty);
+    expect(c.read(authControllerProvider).value, isA<SignedOut>());
   });
 }

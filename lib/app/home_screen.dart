@@ -13,6 +13,7 @@ import '../features/messages/presentation/messages_tab.dart';
 import '../features/notifications/presentation/notifications_providers.dart';
 import '../features/notifications/presentation/settings_screen.dart';
 import '../features/timetable/presentation/timetable_view.dart';
+import 'build_config.dart';
 import 'providers.dart';
 
 /// Powłoka aplikacji: Oceny, Plan lekcji, Wiadomości; obsługa kliknięć powiadomień.
@@ -145,11 +146,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: const Icon(Icons.settings_outlined),
             onPressed: _openSettings,
           ),
-          IconButton(
-            tooltip: 'Diagnostyka integracji',
-            icon: const Icon(Icons.health_and_safety_outlined),
-            onPressed: _openDiagnostics,
-          ),
+          if (BuildConfig.current.diagnostics)
+            IconButton(
+              tooltip: 'Diagnostyka integracji',
+              icon: const Icon(Icons.health_and_safety_outlined),
+              onPressed: _openDiagnostics,
+            ),
           IconButton(
             tooltip: 'Wyloguj',
             icon: const Icon(Icons.logout),

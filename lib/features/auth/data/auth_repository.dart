@@ -59,7 +59,11 @@ class AuthRepository {
   }
 
   Future<void> _discardLocal() async {
-    await _discardStoredSession();
-    await _webCleaner.clear();
+    try {
+      await _discardStoredSession();
+    } finally {
+      // Ciasteczka WebView czyścimy także wtedy, gdy zawiódł magazyn sesji.
+      await _webCleaner.clear();
+    }
   }
 }

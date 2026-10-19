@@ -66,13 +66,29 @@ class AuthController extends AsyncNotifier<AuthState> {
 
   /// Świadome wylogowanie usuwa także lokalne wiadomości robocze. Klient
   /// wiadomości (ciasteczka w pamięci) jest odtwarzany przy zmianie stanu.
+  ///
+  /// Kroki są niezależne: błąd jednego (np. wtyczki) nie zostawia na telefonie
+  /// danych z pozostałych, a aplikacja i tak przechodzi do ekranu logowania.
+  /// Pierwszy błąd jest zgłaszany dalej po wykonaniu wszystkich kroków.
   Future<void> logout() async {
+    Object? firstError;
+    StackTrace? firstStack;
     // Najpierw koniec monitorowania (trwające zadanie w tle sprawdza sesję
     // i ustawienia przed pokazaniem powiadomienia).
-    await ref.read(notificationsCleanupProvider)();
-    await _repo.logout();
-    await ref.read(draftsStoreProvider).clearAll();
+    for (final step in <Future<void> Function()>[
+      () => ref.read(notificationsCleanupProvider)(),
+      () => _repo.logout(),
+      () => ref.read(draftsStoreProvider).clearAll(),
+    ]) {
+      try {
+        await step();
+      } catch (e, st) {
+        firstError ??= e;
+        firstStack ??= st;
+      }
+    }
     state = const AsyncData(SignedOut());
+    if (firstError != null) Error.throwWithStackTrace(firstError, firstStack!);
   }
 
   Future<void> sessionExpired() async {

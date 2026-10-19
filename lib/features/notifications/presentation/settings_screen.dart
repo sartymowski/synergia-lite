@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/build_config.dart';
 import '../../../shared/format.dart';
 import '../data/message_notification_checker.dart';
 import '../domain/background_policy.dart';
@@ -170,7 +170,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   'w ustawieniach systemu wstrzymuje sprawdzanie do ponownego uruchomienia aplikacji.',
                 ),
               ),
-              if (kDebugMode) ...[
+              if (BuildConfig.current.developerTools) ...[
                 const Divider(),
                 ListTile(
                   leading: const Icon(Icons.bug_report_outlined),
@@ -188,10 +188,66 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onTap: _busy ? null : _checkNow,
                 ),
               ],
+              const Divider(),
+              const AboutSection(config: BuildConfig.current),
             ],
           );
         },
       ),
+    );
+  }
+}
+
+/// Wersja, charakter aplikacji i aktywne funkcje eksperymentalne — testerzy
+/// podają te dane w zgłoszeniach (docs/beta/feedback-template.md).
+class AboutSection extends StatelessWidget {
+  const AboutSection({super.key, required this.config});
+
+  final BuildConfig config;
+
+  @override
+  Widget build(BuildContext context) {
+    final experimental = config.experimentalFeatures;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Text(
+            'O aplikacji',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.info_outline),
+          title: Text('Synergia Lite ${config.versionLabel}'),
+          subtitle: const Text(
+            'Nieoficjalna aplikacja, niezwiązana z firmą Librus. Logowanie odbywa się '
+            'na stronie Librusa; aplikacja nie zna hasła i nie wysyła danych nigdzie '
+            'poza serwery Librusa. Wylogowanie usuwa z telefonu sesję, wiadomości '
+            'robocze i stan powiadomień.',
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.science_outlined),
+          title: const Text('Funkcje eksperymentalne'),
+          subtitle: Text(
+            experimental.isEmpty
+                ? 'Wyłączone (logowanie przez stronę Librusa nadal jest '
+                      'mechanizmem testowym).'
+                : 'Włączone: ${experimental.join(', ')}.',
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.description_outlined),
+          title: const Text('Licencje bibliotek'),
+          onTap: () => showLicensePage(
+            context: context,
+            applicationName: 'Synergia Lite',
+            applicationVersion: config.versionLabel,
+          ),
+        ),
+      ],
     );
   }
 }

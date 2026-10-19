@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
+import '../../../app/build_config.dart';
 import '../../../app/providers.dart';
 import '../../../core/errors/synergia_exception.dart';
 import '../../../core/network/session_cookies.dart';
@@ -145,7 +145,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final platform = controller.platform;
     if (platform is AndroidWebViewController) {
       // chrome://inspect tylko w buildach debug.
-      AndroidWebViewController.enableDebugging(kDebugMode);
+      AndroidWebViewController.enableDebugging(
+        BuildConfig.current.webViewDebugging,
+      );
       platform
         ..setAllowFileAccess(false)
         ..setAllowContentAccess(false)
@@ -173,7 +175,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _show(
           'Wykryto pętlę przekierowań (ta sama strona ładuje się wielokrotnie). '
           'Zatrzymano automatyczne działania. Spróbuj „Zacznij od nowa”'
-          '${kDebugMode ? ' lub sprawdź log nawigacji' : ''}.',
+          '${BuildConfig.current.developerTools ? ' lub sprawdź log nawigacji' : ''}.',
           error: true,
         );
       case PageAction.verifySession:
@@ -234,8 +236,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _show(
           e is LoginNotCompletedException
               ? 'Synergia nie potwierdziła jeszcze sesji. Dokończ logowanie na '
-                    'stronie albo użyj „Sprawdź logowanie” / „Diagnostyka”.'
-              : '${e.message} Możesz uruchomić diagnostykę.',
+                    'stronie albo użyj „Sprawdź logowanie”.'
+              : BuildConfig.current.diagnostics
+              ? '${e.message} Możesz uruchomić diagnostykę.'
+              : '${e.message} Spróbuj „Zacznij od nowa”.',
           error: e is! LoginNotCompletedException,
         );
       }
@@ -347,7 +351,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             icon: const Icon(Icons.refresh),
             onPressed: _verifying ? null : _restart,
           ),
-          if (kDebugMode)
+          if (BuildConfig.current.developerTools)
             IconButton(
               tooltip: 'Log nawigacji',
               icon: const Icon(Icons.bug_report_outlined),
@@ -381,7 +385,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   : scheme.secondaryContainer,
               content: Text(_message!),
               actions: [
-                if (_failedAttempt != null)
+                if (_failedAttempt != null && BuildConfig.current.diagnostics)
                   TextButton(
                     onPressed: _openDiagnostics,
                     child: const Text('Diagnostyka'),

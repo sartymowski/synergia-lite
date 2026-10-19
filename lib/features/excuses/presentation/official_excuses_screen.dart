@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
+import '../../../app/build_config.dart';
 import '../../auth/domain/login_flow.dart' show isAllowedMainFrame;
 
 /// Rozwiązanie awaryjne: oficjalny moduł e-Usprawiedliwień Librusa w WebView.
@@ -50,7 +50,9 @@ class _OfficialExcusesScreenState extends State<OfficialExcusesScreen> {
     final platform = controller.platform;
     if (platform is AndroidWebViewController) {
       // chrome://inspect tylko w buildach debug (analiza struktury formularza).
-      AndroidWebViewController.enableDebugging(kDebugMode);
+      AndroidWebViewController.enableDebugging(
+        BuildConfig.current.webViewDebugging,
+      );
       platform
         ..setAllowFileAccess(false)
         ..setAllowContentAccess(false)
