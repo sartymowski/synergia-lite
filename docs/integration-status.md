@@ -16,6 +16,7 @@ Ostatnia aktualizacja: **2026-10-18** (etap A zamknięty wg testu użytkownika; 
 | Oceny z żywego konta | ⚠️ zapytanie bez błędów, ale konto ma **0 ocen** — parsowanie prawdziwych ocen niesprawdzone |
 | Wiadomości — odczyt, odbiorcy | ⚠️ zaimplementowane; kontrakt potwierdzony na żywo przez librus-synergia (inne konto), **na Twoim koncie niesprawdzone** — diagnostyka gotowa |
 | Wiadomości — odpowiedź w wątku | ⚠️ zaimplementowane; potwierdzone na żywo przez librus-synergia, **u Ciebie niesprawdzone** |
+| e-Usprawiedliwienia | ✅ odczyt historii na Twoim koncie (8 zgłoszeń; `send` = wysłane, `accept` = usprawiedliwione — potwierdzone porównaniem); natywny formularz gotowy, **wysyłka natywna nieaktywna** (odpowiedź serwera nieznana); wysyłka przez oficjalny formularz w WebView — zob. `docs/excuses.md` |
 | Powiadomienia o nowych wiadomościach | ⚠️ zaimplementowane; **tło wyłączone** (dopuszczalność niepotwierdzona); na urządzeniu sprawdzono tylko start aplikacji i brak zarejestrowanego zadania — zob. `docs/notifications.md` |
 | Wiadomości — nowa wiadomość (`POST messages`) | ⚠️ zaimplementowane wg JS Librusa; **nikt nie potwierdził na żywo** — test ręczny wg checklisty |
 | Wygaśnięcie sesji | ⚠️ 401/403/3xx → wylogowanie lokalne i ekran logowania; czas życia sesji **nieznany** |
@@ -247,3 +248,15 @@ Kontrakt i statusy endpointów: `docs/messages-api.md`.
 - [ ] „Wyloguj” → po ponownym zalogowaniu folder „Robocze” jest pusty.
 
 Zgłoś tylko wynik (zgodne / niezgodne / komunikat), bez treści wiadomości i danych osób.
+- 2026-10-19 (raport diagnostyki z telefonu): sesja uwierzytelniona (kontrola negatywna 401,
+  `Me` 200); plan lekcji 30 lekcji w tygodniu; oceny 0 (konto bez ocen);
+  `Justifications` 8 zgłoszeń (`accept`, `send`), **wszystkie za całe dni** — prezentacja
+  zgłoszeń z lekcjami sprawdzona tylko na danych fikcyjnych; strona `/eusprawiedliwienia`
+  dostępna (lista z filtrem POST: `data_od`, `data_do`, `status`, `requestkey`,
+  `usprawiedliwienia_filtr`); **wiadomości: inicjalizacja `[OK]` po poprawce http→https**,
+  `me` zwraca pola na poziomie głównym (`data: null`), Odebrane 53, Wysłane 20,
+  11 grup odbiorców.
+- Obserwacja do śledzenia: ciasteczko `oauth_token` ma krótki termin ważności (wygasało
+  ~40 s po raporcie), a sesja działa dalej na `DZIENNIKSID`. Aplikacja nie zapisuje
+  terminów ważności ciasteczek; jeśli kiedyś pojawią się nagłe wylogowania, pierwszym
+  podejrzanym jest odświeżanie `oauth_token` (`/refreshToken`, niezweryfikowane).

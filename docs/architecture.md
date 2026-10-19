@@ -42,6 +42,11 @@ lib/
                             MessageDraft, MessageFolder, SendOutcome, bezpieczny parser treści
       presentation/         MessagesTab (Odebrane/Wysłane/Robocze), lista, szczegóły,
                             ComposeScreen + ComposeController, wybór odbiorców
+    excuses/
+      data/                 ExcusesParser, ExcusesRepository (GET Justifications)
+      domain/               ExcuseRequest, ExcuseStatus (nieznane zachowane), ExcusePeriod,
+                            ExcuseLesson, ExcuseFilter
+      presentation/         lista z filtrami, szczegóły, oficjalny moduł w WebView
     notifications/
       data/                 MessageNotificationChecker (jedno sprawdzenie), stan synchronizacji,
                             LocalNotificationService, WorkManager (callbackDispatcher)

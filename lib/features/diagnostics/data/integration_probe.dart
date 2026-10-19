@@ -1,3 +1,5 @@
+import 'package:html/parser.dart' as html_parser;
+
 import '../../../core/errors/synergia_exception.dart';
 import '../../../core/network/synergia_api_client.dart';
 import '../../../core/network/web_cookie.dart';
@@ -42,6 +44,8 @@ class IntegrationProbe {
     if (verdict != AuthVerdict.notAuthenticated) {
       checks.add(await _grades());
       checks.add(await _timetable());
+      checks.add(await _excusesHistory());
+      checks.add(await _excusesPage());
       if (messages case final m?) checks.addAll(await _messages(m));
     }
     return DiagnosticReport(
@@ -269,6 +273,72 @@ class IntegrationProbe {
     null => 'null',
     _ => json.runtimeType.toString(),
   };
+
+  /// e-Usprawiedliwienia — historia z gateway (statusy, liczby, nazwy pól).
+  Future<DiagnosticCheck>
+  _excusesHistory() => _guard("e-Usprawiedliwienia: Justifications", () async {
+    final json = await _api.get("Justifications");
+    final data = json["data"];
+    final items = data is List ? data.whereType<Map>().toList() : const <Map>[];
+    final statuses = {
+      for (final i in items) "${i["justificationStatus"] ?? "(brak)"}",
+    };
+    return DiagnosticCheck(
+      "e-Usprawiedliwienia: Justifications",
+      data is List ? CheckStatus.ok : CheckStatus.failed,
+      [
+        "koperta: ${_keys(json)}",
+        "status koperty: ${json["status"] ?? "(brak)"}",
+        "zgłoszeń: ${items.length}",
+        if (statuses.isNotEmpty)
+          "wartości statusu: ${(statuses.toList()..sort()).join(", ")}",
+        if (items.isNotEmpty)
+          "pola rekordu: ${_keys(items.first.cast<String, dynamic>())}",
+        if (items.isNotEmpty)
+          "z lekcjami: ${items.where((i) => i["lessons"] is List && (i["lessons"] as List).isNotEmpty).length}",
+      ],
+    );
+  }, failure: CheckStatus.warning);
+
+  /// Oficjalna strona modułu (tylko GET): czy dostępna przy tej sesji i jaka
+  /// jest struktura formularzy — metody, ścieżki, NAZWY pól (bez wartości).
+  Future<DiagnosticCheck> _excusesPage() => _guard(
+    "e-Usprawiedliwienia: strona /eusprawiedliwienia",
+    () async {
+      final page = await _api.fetchPage("eusprawiedliwienia");
+      final doc = html_parser.parse(page.body);
+      final location = page.location == null
+          ? null
+          : Uri.tryParse(page.location!);
+      final forms = doc.querySelectorAll("form");
+      final denied = page.body.contains("Brak dostępu");
+      return DiagnosticCheck(
+        "e-Usprawiedliwienia: strona /eusprawiedliwienia",
+        page.status == 200 && !denied ? CheckStatus.ok : CheckStatus.warning,
+        [
+          "HTTP ${page.status}",
+          if (location != null)
+            "przekierowanie: ${location.host}${location.path}",
+          "„Brak dostępu”: ${denied ? "tak" : "nie"}",
+          "link /loguj/przenies/eusprawiedliwienia: ${page.body.contains("przenies") ? "tak" : "nie"}",
+          "formularzy: ${forms.length}",
+          for (final form in forms.take(5))
+            () {
+              final action = Uri.tryParse(form.attributes["action"] ?? "");
+              final names = {
+                for (final i in form.querySelectorAll(
+                  "input, select, textarea",
+                ))
+                  "${i.attributes["name"] ?? "?"}${i.attributes["type"] == "hidden" ? "(ukryte)" : ""}",
+              }.toList()..sort();
+              return "formularz ${(form.attributes["method"] ?? "get").toUpperCase()} "
+                  "${action == null ? "?" : action.path}: pola ${names.join(", ")}";
+            }(),
+        ],
+      );
+    },
+    failure: CheckStatus.warning,
+  );
 
   Future<DiagnosticCheck> _guard(
     String title,

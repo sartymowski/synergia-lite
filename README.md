@@ -52,6 +52,7 @@ Testy nie wymagają sieci ani danych logowania; fixture'y w `test/fixtures` są 
 - [docs/decisions.md](docs/decisions.md) — decyzje techniczne i zależności
 - [docs/messages-api.md](docs/messages-api.md) — moduł Wiadomości: kontrakt API i stan weryfikacji
 - [docs/notifications.md](docs/notifications.md) — powiadomienia: audyt, dopuszczalność, gwarancje, checklista
+- [docs/excuses.md](docs/excuses.md) — e-Usprawiedliwienia: mechanizm, stan weryfikacji, checklista
 
 ## Prywatność
 

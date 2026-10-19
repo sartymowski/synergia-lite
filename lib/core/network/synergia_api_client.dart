@@ -70,6 +70,93 @@ class SynergiaApiClient {
     });
   }
 
+  /// Odczyt (GET) strony HTML Synergii z sesją — diagnostyka struktury
+  /// oficjalnych modułów oraz pobranie aktualnego tokenu formularza przed
+  /// wysłaniem. Bez śledzenia przekierowań; zwraca kod, adres przekierowania
+  /// (do zredagowania przez wywołującego) i treść.
+  Future<({int status, String? location, String body})> fetchPage(String path) {
+    _checkRelative(path);
+    return _serialized(() async {
+      final session = _session ??= await _store.read();
+      if (session == null || session.isEmpty) {
+        throw const SessionExpiredException();
+      }
+      try {
+        final r = await _dio.get<dynamic>(
+          'https://${SessionCookies.host}/$path',
+          options: Options(
+            headers: {'Cookie': session.toHeader(), 'Accept': 'text/html'},
+            responseType: ResponseType.plain,
+          ),
+        );
+        await _mergeCookies(session, r);
+        return (
+          status: r.statusCode ?? 0,
+          location: r.headers.value('location'),
+          body: '${r.data ?? ''}',
+        );
+      } on DioException catch (e) {
+        throw _mapDioException(e);
+      }
+    });
+  }
+
+  /// Jedno wysłanie formularza HTML Synergii (POST multipart) — NIGDY nie
+  /// ponawiane i bez śledzenia przekierowań. Błąd transportu: [SubmitTransportException].
+  Future<({int status, String? location, String body})> submitForm(
+    String path,
+    FormData form, {
+    required String referer,
+  }) {
+    _checkRelative(path);
+    return _serialized(() async {
+      final session = _session ??= await _store.read();
+      if (session == null || session.isEmpty) {
+        throw const SessionExpiredException();
+      }
+      final Response<dynamic> r;
+      try {
+        r = await _dio.post<dynamic>(
+          'https://${SessionCookies.host}/$path',
+          data: form,
+          options: Options(
+            headers: {
+              'Cookie': session.toHeader(),
+              'Accept': 'text/html',
+              'Referer': referer,
+              'Origin': 'https://${SessionCookies.host}',
+            },
+            responseType: ResponseType.plain,
+          ),
+        );
+      } on DioException catch (e) {
+        throw SubmitTransportException(
+          requestMayHaveReachedServer:
+              e.type != DioExceptionType.connectionTimeout,
+        );
+      }
+      await _mergeCookies(session, r);
+      return (
+        status: r.statusCode ?? 0,
+        location: r.headers.value('location'),
+        body: '${r.data ?? ''}',
+      );
+    });
+  }
+
+  Future<void> _mergeCookies(
+    SessionCookies session,
+    Response<dynamic> r,
+  ) async {
+    final setCookies = r.headers['set-cookie'];
+    if (setCookies == null || setCookies.isEmpty) return;
+    final updated = session.merge(setCookies);
+    if (!identical(updated, session)) {
+      _session = updated;
+      await _store.write(updated);
+    }
+  }
+
   /// Ciasteczka sesji mogą trafić wyłącznie do gateway Synergii.
   static void _checkRelative(String path) {
     if (path.contains('://') || path.startsWith('/') || path.contains('..')) {
@@ -202,4 +289,12 @@ class SynergiaApiClient {
     ),
     _ => const NetworkException(),
   };
+}
+
+/// Błąd transportu przy wysyłaniu formularza. [requestMayHaveReachedServer] =
+/// false tylko wtedy, gdy połączenia na pewno nie nawiązano.
+final class SubmitTransportException implements Exception {
+  const SubmitTransportException({required this.requestMayHaveReachedServer});
+
+  final bool requestMayHaveReachedServer;
 }

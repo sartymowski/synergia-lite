@@ -155,3 +155,24 @@ i ponawia ją `loadUrl` bez `Referer` — co dawało pętlę. Dlatego:
 - `SynergiaApiClient`: przy 401 jedna próba z ciasteczkami z magazynu (rotacja w innym
   kontekście). `MessagesApiClient`: przekazywanie `Retry-After`.
 - `KeyValueStore` przeniesiony do `core/storage` (używany przez wiadomości robocze i powiadomienia).
+
+## D14. e-Usprawiedliwienia: natywny odczyt, wysyłanie w oficjalnym module (2026-10-19)
+
+- Odczyt: `gateway/api/2.0/Justifications` przez istniejącą sesję (librus-synergia,
+  na żywo 10.2026). Nieznane statusy zachowywane dosłownie — potwierdzono tylko `accept`.
+- Wysyłanie: moduł działa w Koncie LIBRUS, kontrakt zapisu nieznany → bez natywnego POST.
+  Oficjalny moduł w WebView (bez przechwytywania nawigacji, bez wstrzykiwania JS);
+  przyjęcie weryfikowane porównaniem historii przed/po.
+- 401/403 na `Justifications` przy działającym `Me` = brak modułu, bez wylogowania.
+- `SynergiaApiClient.fetchPage` (GET HTML z hosta Synergii) wyłącznie dla diagnostyki
+  struktury formularzy — nazwy pól, nigdy wartości.
+
+## D15. e-Usprawiedliwienia: natywny formularz, wysyłka nieaktywna; HTTPS dla przekierowań Librusa (2026-10-19)
+
+- Kontrakt żądania ustalony z oficjalnej strony (struktura DOM + publiczny JS) — zob.
+  docs/excuses.md §0. Odpowiedź serwera nieznana → `SYNERGIA_NATIVE_EXCUSE_SUBMIT` = false.
+- Przyjęcie potwierdzane wyłącznie historią (`Justifications`), nigdy kodem HTTP.
+- Lekcje w formularzu i szczegółach: numer z formularza Librusa + przedmiot z planu lekcji.
+- Wiadomości: `wiadomosci3` w kroku 3 przekierowuje na `http://wiadomosci.librus.pl` przy
+  ponownej inicjalizacji. Dla hostów `*.librus.pl` (port domyślny) `http` → `https`;
+  obce domeny i inne schematy nadal odrzucane. Komunikat błędu podaje tylko schemat i host.

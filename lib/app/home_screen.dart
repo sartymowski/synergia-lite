@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/auth/data/webview_session.dart';
 import '../features/diagnostics/data/integration_probe.dart';
 import '../features/diagnostics/presentation/diagnostics_screen.dart';
+import '../features/excuses/presentation/excuses_view.dart';
 import '../features/grades/presentation/grades_view.dart';
 import '../features/messages/domain/message.dart';
 import '../features/messages/presentation/message_detail_screen.dart';
@@ -166,6 +167,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             MessagesTab(key: ValueKey(_messagesKey))
           else
             const SizedBox(),
+          if (_visited.contains(3)) const ExcusesView() else const SizedBox(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -190,6 +192,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: const Icon(Icons.mail_outline),
             ),
             label: 'Wiadomości',
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.assignment_turned_in_outlined),
+            label: 'Usprawiedliwienia',
           ),
         ],
       ),

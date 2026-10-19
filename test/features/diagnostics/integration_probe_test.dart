@@ -325,4 +325,69 @@ void main() {
       );
     });
   });
+
+  group("e-Usprawiedliwienia (tylko odczyt, struktura)", () {
+    ResponseBody withExcuses(RequestOptions o, {required String page}) {
+      if (o.path == "Justifications") {
+        return jsonBody({
+          "status": "OK",
+          "data": [
+            {
+              "id": 1,
+              "justificationStatus": "accept",
+              "messageFromParent": "Wiktoria Sekretna choroba",
+              "lessons": [],
+            },
+          ],
+        });
+      }
+      if (o.path == "https://synergia.librus.pl/eusprawiedliwienia") {
+        return textBody(page);
+      }
+      return _livingAccount(o);
+    }
+
+    test("struktura formularza bez wartości pól i tokenu CSRF", () async {
+      const page =
+          "<form method=\"post\" action=\"/eusprawiedliwienia/zapisz?t=TOKEN_SECRET_2\">"
+          "<input type=\"hidden\" name=\"csrf_token\" value=\"CSRF_SECRET_X\">"
+          "<input name=\"dateFrom\" value=\"2026-10-01\">"
+          "<textarea name=\"message\">Wiktoria Sekretna</textarea></form>";
+      final (report, adapter) = await run((o) => withExcuses(o, page: page));
+      final text = report.toText();
+      expect(
+        text,
+        contains(
+          "formularz POST /eusprawiedliwienia/zapisz: pola csrf_token(ukryte), dateFrom, message",
+        ),
+      );
+      expect(text, contains("wartości statusu: accept"));
+      expect(text, contains("„Brak dostępu”: nie"));
+      for (final secret in [..._secrets, "CSRF_SECRET_X", "2026-10-01"]) {
+        expect(text, isNot(contains(secret)), reason: secret);
+      }
+      expect(
+        adapter.requests.every((r) => r.method == "GET"),
+        isTrue,
+        reason: "żadnego zapisu",
+      );
+    });
+
+    test("strona „Brak dostępu” przy loginie Synergii", () async {
+      const page =
+          r'<p>Brak dostępu</p><a href="https:\/\/synergia.librus.pl\/loguj\/przenies\/eusprawiedliwienia">Loguj</a>';
+      final (report, _) = await run((o) => withExcuses(o, page: page));
+      final check = report.checks.firstWhere(
+        (c) => c.title.contains("/eusprawiedliwienia"),
+      );
+      expect(check.status, CheckStatus.warning);
+      expect(
+        check.facts,
+        containsAll([
+          "„Brak dostępu”: tak",
+          "link /loguj/przenies/eusprawiedliwienia: tak",
+        ]),
+      );
+    });
+  });
 }
